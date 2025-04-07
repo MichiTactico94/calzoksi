@@ -1,10 +1,122 @@
-<!-- index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Mi sitio web</title>
+    <meta charset="UTF-8">
+    <title>Convertidor de Plugins PocketMine</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background-color: #1e1e1e;
+            color: white;
+            padding: 20px;
+        }
+        input[type="file"] {
+            margin-top: 20px;
+        }
+        pre {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: left;
+            max-width: 800px;
+            margin: auto;
+            overflow-x: auto;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <h1>¡Hola mundo desde GitHub Pages!</h1>
+    <h1>🧠 Convertidor de Plugins PocketMine</h1>
+    <p>Sube tu archivo .phar y convierte la API a 5.0.0 si es necesario.</p>
+    <input type="file" id="fileInput" accept=".phar">
+    <div id="output"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', async function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            const output = document.getElementById('output');
+            output.innerHTML = "<p>Procesando .phar...</p>";
+
+            const arrayBuffer = await file.arrayBuffer();
+            const zip = new JSZip();
+
+            try {
+                const loaded = await zip.loadAsync(arrayBuffer);
+
+                let pluginYml = null;
+                let phpFiles = [];
+                let oldApi = null;
+
+                for (let fileName in loaded.files) {
+                    if (fileName.toLowerCase().endsWith("plugin.yml")) {
+                        pluginYml = await loaded.file(fileName).async("string");
+                    }
+                    if (fileName.endsWith(".php")) {
+                        phpFiles.push({
+                            name: fileName,
+                            content: await loaded.file(fileName).async("string")
+                        });
+                    }
+                }
+
+                if (!pluginYml) {
+                    output.innerHTML = "<p style='color:red;'>❌ No se encontró plugin.yml en el .phar</p>";
+                    return;
+                }
+
+                const apiMatch = pluginYml.match(/api:\s*\[?([^\]]+)\]?/);
+                oldApi = apiMatch ? apiMatch[1].trim() : "No encontrada";
+
+                output.innerHTML = `
+                    <h2>plugin.yml encontrado ✅</h2>
+                    <p><strong>API detectada:</strong> ${oldApi}</p>
+                    <pre>${pluginYml}</pre>
+                `;
+
+                if (oldApi !== "5.0.0") {
+                    const btn = document.createElement("button");
+                    btn.textContent = "Convertir a API 5.0.0 y descargar ZIP";
+                    btn.onclick = () => {
+                        const newZip = new JSZip();
+
+                        for (let php of phpFiles) {
+                            newZip.file(php.name, php.content);
+                        }
+
+                        const newYml = pluginYml.replace(/api:\s*\[?([^\]]+)\]?/, "api: [5.0.0]");
+                        newZip.file("plugin.yml", newYml);
+
+                        newZip.generateAsync({ type: "blob" }).then(blob => {
+                            const a = document.createElement("a");
+                            a.href = URL.createObjectURL(blob);
+                            a.download = "Plugin-Convertido.zip";
+                            a.click();
+                        });
+                    };
+                    output.appendChild(btn);
+                } else {
+                    output.innerHTML += `<p>✅ Ya está en API 5.0.0</p>`;
+                }
+
+            } catch (e) {
+                output.innerHTML = `<p style='color:red;'>❌ Error al leer el archivo: ${e.message}</p>`;
+            }
+        });
+    </script>
 </body>
 </html>
