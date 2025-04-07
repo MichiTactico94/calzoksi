@@ -1,90 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Convertidor PocketMine 5.0.0</title>
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #0f0f0f;
-      color: white;
-      margin: 0;
-      padding: 2rem;
-      text-align: center;
-    }
-    .card {
-      background: #1e1e1e;
-      border-radius: 12px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      box-shadow: 0 0 10px #00ff88;
-    }
-    h1 {
-      color: #00ff88;
-    }
-    button {
-      background-color: #00ff88;
-      color: black;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    input[type=file] {
-      margin: 1rem 0;
-      color: #00ff88;
-    }
-    #resultado {
-      margin-top: 1rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Convertidor de Plugins PocketMine 5.0.0</title>
+    <style>
+        body {
+            background-color: #1f1f1f;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
+        }
+        .container {
+            background-color: #2c2c2c;
+            padding: 30px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+        input[type="file"], input[type="submit"] {
+            margin: 15px 0;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
-
-  <h1>Convertidor PocketMine 5.0.0</h1>
-
-  <div class="card">
-    <h2>🔧 Convertir plugin (.phar)</h2>
-    <form id="pluginForm">
-      <input type="file" name="plugin" accept=".phar" required><br>
-      <button type="submit">Convertir plugin</button>
-    </form>
-    <div id="resultadoPlugin"></div>
-  </div>
-
-  <div class="card">
-    <h2>🗺️ Convertir mundo (experimental)</h2>
-    <form id="worldForm">
-      <input type="file" name="world" accept=".zip" required><br>
-      <button type="submit">Convertir mundo</button>
-    </form>
-    <div id="resultadoWorld"></div>
-  </div>
-
-  <script>
-    const pluginForm = document.getElementById('pluginForm');
-    const worldForm = document.getElementById('worldForm');
-
-    pluginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(pluginForm);
-      const res = await fetch('php/convert_plugin.php', { method: 'POST', body: formData });
-      const data = await res.json();
-      document.getElementById('resultadoPlugin').innerHTML =
-        data.success ? `✅ ${data.message}<br><a href="${data.download}" download>Descargar PHAR</a>` : '❌ Error al convertir';
-    });
-
-    worldForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(worldForm);
-      const res = await fetch('php/convert_world.php', { method: 'POST', body: formData });
-      const data = await res.json();
-      document.getElementById('resultadoWorld').innerHTML =
-        data.success ? `✅ ${data.message}<br><a href="${data.download}" download>Descargar Mundo ZIP</a>` : '❌ Error al convertir mundo';
-    });
-  </script>
+    <div class="container">
+        <h1>🔧 Convertidor de Plugins a API 5.0.0</h1>
+        <form action="convert_plugin.php" method="POST" enctype="multipart/form-data">
+            <input type="file" name="pluginZip" accept=".zip" required><br>
+            <input type="submit" value="Convertir Plugin">
+        </form>
+    </div>
 </body>
 </html>
