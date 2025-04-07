@@ -1,122 +1,90 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Convertidor de Plugins PocketMine</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            text-align: center;
-            background-color: #1e1e1e;
-            color: white;
-            padding: 20px;
-        }
-        input[type="file"] {
-            margin-top: 20px;
-        }
-        pre {
-            background-color: #333;
-            padding: 10px;
-            border-radius: 10px;
-            text-align: left;
-            max-width: 800px;
-            margin: auto;
-            overflow-x: auto;
-        }
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Convertidor PocketMine 5.0.0</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f0f0f;
+      color: white;
+      margin: 0;
+      padding: 2rem;
+      text-align: center;
+    }
+    .card {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 10px #00ff88;
+    }
+    h1 {
+      color: #00ff88;
+    }
+    button {
+      background-color: #00ff88;
+      color: black;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    input[type=file] {
+      margin: 1rem 0;
+      color: #00ff88;
+    }
+    #resultado {
+      margin-top: 1rem;
+    }
+  </style>
 </head>
 <body>
-    <h1>🧠 Convertidor de Plugins PocketMine</h1>
-    <p>Sube tu archivo .phar y convierte la API a 5.0.0 si es necesario.</p>
-    <input type="file" id="fileInput" accept=".phar">
-    <div id="output"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-    <script>
-        document.getElementById('fileInput').addEventListener('change', async function () {
-            const file = this.files[0];
-            if (!file) return;
+  <h1>Convertidor PocketMine 5.0.0</h1>
 
-            const output = document.getElementById('output');
-            output.innerHTML = "<p>Procesando .phar...</p>";
+  <div class="card">
+    <h2>🔧 Convertir plugin (.phar)</h2>
+    <form id="pluginForm">
+      <input type="file" name="plugin" accept=".phar" required><br>
+      <button type="submit">Convertir plugin</button>
+    </form>
+    <div id="resultadoPlugin"></div>
+  </div>
 
-            const arrayBuffer = await file.arrayBuffer();
-            const zip = new JSZip();
+  <div class="card">
+    <h2>🗺️ Convertir mundo (experimental)</h2>
+    <form id="worldForm">
+      <input type="file" name="world" accept=".zip" required><br>
+      <button type="submit">Convertir mundo</button>
+    </form>
+    <div id="resultadoWorld"></div>
+  </div>
 
-            try {
-                const loaded = await zip.loadAsync(arrayBuffer);
+  <script>
+    const pluginForm = document.getElementById('pluginForm');
+    const worldForm = document.getElementById('worldForm');
 
-                let pluginYml = null;
-                let phpFiles = [];
-                let oldApi = null;
+    pluginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(pluginForm);
+      const res = await fetch('php/convert_plugin.php', { method: 'POST', body: formData });
+      const data = await res.json();
+      document.getElementById('resultadoPlugin').innerHTML =
+        data.success ? `✅ ${data.message}<br><a href="${data.download}" download>Descargar PHAR</a>` : '❌ Error al convertir';
+    });
 
-                for (let fileName in loaded.files) {
-                    if (fileName.toLowerCase().endsWith("plugin.yml")) {
-                        pluginYml = await loaded.file(fileName).async("string");
-                    }
-                    if (fileName.endsWith(".php")) {
-                        phpFiles.push({
-                            name: fileName,
-                            content: await loaded.file(fileName).async("string")
-                        });
-                    }
-                }
-
-                if (!pluginYml) {
-                    output.innerHTML = "<p style='color:red;'>❌ No se encontró plugin.yml en el .phar</p>";
-                    return;
-                }
-
-                const apiMatch = pluginYml.match(/api:\s*\[?([^\]]+)\]?/);
-                oldApi = apiMatch ? apiMatch[1].trim() : "No encontrada";
-
-                output.innerHTML = `
-                    <h2>plugin.yml encontrado ✅</h2>
-                    <p><strong>API detectada:</strong> ${oldApi}</p>
-                    <pre>${pluginYml}</pre>
-                `;
-
-                if (oldApi !== "5.0.0") {
-                    const btn = document.createElement("button");
-                    btn.textContent = "Convertir a API 5.0.0 y descargar ZIP";
-                    btn.onclick = () => {
-                        const newZip = new JSZip();
-
-                        for (let php of phpFiles) {
-                            newZip.file(php.name, php.content);
-                        }
-
-                        const newYml = pluginYml.replace(/api:\s*\[?([^\]]+)\]?/, "api: [5.0.0]");
-                        newZip.file("plugin.yml", newYml);
-
-                        newZip.generateAsync({ type: "blob" }).then(blob => {
-                            const a = document.createElement("a");
-                            a.href = URL.createObjectURL(blob);
-                            a.download = "Plugin-Convertido.zip";
-                            a.click();
-                        });
-                    };
-                    output.appendChild(btn);
-                } else {
-                    output.innerHTML += `<p>✅ Ya está en API 5.0.0</p>`;
-                }
-
-            } catch (e) {
-                output.innerHTML = `<p style='color:red;'>❌ Error al leer el archivo: ${e.message}</p>`;
-            }
-        });
-    </script>
+    worldForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(worldForm);
+      const res = await fetch('php/convert_world.php', { method: 'POST', body: formData });
+      const data = await res.json();
+      document.getElementById('resultadoWorld').innerHTML =
+        data.success ? `✅ ${data.message}<br><a href="${data.download}" download>Descargar Mundo ZIP</a>` : '❌ Error al convertir mundo';
+    });
+  </script>
 </body>
 </html>
